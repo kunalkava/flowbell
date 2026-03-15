@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kunal Clock</title>
+  <link id="favicon" rel="icon" href="" />
+  <style>
+    :root {
+      --bg1: #07090c;
+      --bg2: #0f1318;
+      --fg: rgba(255, 255, 255, 0.95);
+      --muted: rgba(255, 255, 255, 0.58);
+      --border: rgba(255, 255, 255, 0.14);
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+
+      --pastel-green: #bfe7c6;
+      --pastel-green-text: #16311d;
+
+      --pastel-red: #efc1c1;
+      --pastel-red-text: #4a2020;
+
+      --toggle-on: #7edc95;
+      --toggle-off: rgba(255, 255, 255, 0.16);
+
+      --range-start: 37.5%;
+      --range-end: 58.33%;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(126, 220, 149, 0.08), transparent 28%),
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.05), transparent 22%),
+        linear-gradient(160deg, var(--bg1), var(--bg2));
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+
+    .wrap {
+      width: min(1020px, 95vw);
+      text-align: center;
+    }
+
+    .clock {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .box,
+    .ampm {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.14);
+    }
+
+    .box::before,
+    .ampm::before,
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), transparent 40%);
+      pointer-events: none;
+    }
+
+    .box {
+      width: 180px;
+      height: 220px;
+      display: grid;
+      place-items: center;
+      font-size: 8rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .colon {
+      width: 40px;
+      height: 220px;
+      display: grid;
+      place-items: center;
+      font-size: 6rem;
+      color: rgba(255,255,255,0.72);
+    }
+
+    .ampm {
+      width: 110px;
+      height: 220px;
+      display: grid;
+      place-items: center;
+      font-size: 2.6rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .sub {
+      color: var(--muted);
+      margin-bottom: 24px;
+      font-size: 0.96rem;
+      letter-spacing: 0.2px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-weight: 700;
+      transition: 0.2s ease;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    }
+
+    button.secondary {
+      background: rgba(255,255,255,0.08);
+      color: var(--fg);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    #startBtn.running {
+      background: var(--pastel-green);
+      color: var(--pastel-green-text);
+    }
+
+    #startBtn.stopped {
+      background: var(--pastel-red);
+      color: var(--pastel-red-text);
+    }
+
+    .panel {
+      position: relative;
+      width: min(840px, 100%);
+      margin: 0 auto 14px;
+      padding: 18px 18px 20px;
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.05));
+      border: 1px solid var(--border);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      box-shadow: var(--shadow);
+      text-align: left;
+      overflow: hidden;
+    }
+
+    .panel-title {
+      text-align: center;
+      font-size: 0.97rem;
+      color: rgba(255,255,255,0.88);
+      margin-bottom: 16px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 10px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .control-row:first-of-type {
+      border-top: none;
+      padding-top: 6px;
+    }
+
+    .control-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .control-label {
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.92);
+      font-weight: 600;
+    }
+
+    .control-hint {
+      font-size: 0.82rem;
+      color: var(--muted);
+      transition: 0.2s ease;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 56px;
+      height: 32px;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider-toggle {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--toggle-off);
+      border: 1px solid rgba(255,255,255,0.12);
+      transition: 0.2s ease;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .slider-toggle:before {
+      content: "";
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: white;
+      transition: 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    }
+
+    .switch input:checked + .slider-toggle {
+      background: var(--toggle-on);
+      border-color: rgba(126,220,149,0.9);
+    }
+
+    .switch input:checked + .slider-toggle:before {
+      transform: translateX(24px);
+    }
+
+    .volume-wrap {
+      width: min(360px, 62vw);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .volume-wrap input[type="range"] {
+      width: 100%;
+      accent-color: #d7d7d7;
+      cursor: pointer;
+    }
+
+    .volume-value {
+      min-width: 48px;
+      text-align: right;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .schedule-section {
+      margin-top: 8px;
+      padding-top: 8px;
+    }
+
+    .schedule-section.hidden {
+      display: none;
+    }
+
+    .range-wrap {
+      position: relative;
+      width: min(720px, 94%);
+      margin: 4px auto 6px;
+      height: 126px;
+      touch-action: none;
+    }
+
+    .range-track {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 60px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .range-highlight {
+      position: absolute;
+      top: 60px;
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(191,231,198,0.92), rgba(126,220,149,0.9));
+      box-shadow: 0 0 14px rgba(126,220,149,0.24);
+      z-index: 1;
+    }
+
+    .range-highlight.segment-a {
+      left: var(--range-start);
+      width: calc(var(--range-end) - var(--range-start));
+    }
+
+    .range-highlight.segment-b {
+      left: 0;
+      width: var(--range-end);
+      display: none;
+    }
+
+    .range-highlight.segment-c {
+      left: var(--range-start);
+      width: calc(100% - var(--range-start));
+      display: none;
+    }
+
+    .range-wrap.overnight .segment-a {
+      display: none;
+    }
+
+    .range-wrap.overnight .segment-b,
+    .range-wrap.overnight .segment-c {
+      display: block;
+    }
+
+    .range-knob {
+      position: absolute;
+      top: 54px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.24);
+      transform: translateX(-50%);
+      z-index: 4;
+      cursor: grab;
+    }
+
+    .range-knob:active {
+      cursor: grabbing;
+    }
+
+    #startKnob {
+      background: linear-gradient(180deg, #d7f2dc, #bfe7c6);
+      border: 1px solid rgba(191, 231, 198, 0.95);
+    }
+
+    #endKnob {
+      background: linear-gradient(180deg, #f6d7d7, #efc1c1);
+      border: 1px solid rgba(239, 193, 193, 0.95);
+    }
+
+    .range-tooltip-time {
+      position: absolute;
+      top: 18px;
+      transform: translateX(-50%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.22);
+      z-index: 5;
+      white-space: nowrap;
+      padding: 7px 10px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      background: rgba(18, 20, 24, 0.84);
+      color: rgba(255,255,255,0.96);
+      border: 1px solid rgba(255,255,255,0.10);
+      min-width: 76px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .range-tooltip-label {
+      position: absolute;
+      top: 92px;
+      transform: translateX(-50%);
+      z-index: 5;
+      white-space: nowrap;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: rgba(255,255,255,0.82);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      pointer-events: none;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+
+    .tiny {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 700px) {
+      .box {
+        width: 118px;
+        height: 146px;
+        font-size: 5rem;
+      }
+
+      .colon {
+        height: 146px;
+        font-size: 4rem;
+      }
+
+      .ampm {
+        width: 82px;
+        height: 146px;
+        font-size: 2rem;
+      }
+
+      .control-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .volume-wrap {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="clock">
+      <div class="box" id="hh">12</div>
+      <div class="colon">:</div>
+      <div class="box" id="mm">00</div>
+      <div class="ampm" id="ampm">AM</div>
+    </div>
+
+    <div class="sub">
+      :00 = 2 short chimes • :30 = 1 short chime
+    </div>
+
+    <div class="controls">
+      <button id="startBtn" class="stopped">Stopped</button>
+      <button id="testHourBtn" class="secondary">Test :00</button>
+      <button id="testHalfBtn" class="secondary">Test :30</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Chime controls</div>
+
+      <div class="control-row">
+        <div class="control-left">
+          <div class="control-label">Volume</div>
+          <div class="control-hint">Adjust chime loudness</div>
+        </div>
+        <div class="volume-wrap">
+          <input type="range" id="volumeSlider" min="1" max="100" value="50" />
+          <div class="volume-value" id="volumeValue">50%</div>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <div class="control-left">
+          <div class="control-label">Enable notifications</div>
+          <div class="control-hint" id="notificationsHint">Browser alerts at :00 and :30</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="notificationsEnabled" />
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+
+      <div class="control-row">
+        <div class="control-left">
+          <div class="control-label">Use schedule window</div>
+          <div class="control-hint" id="scheduleHint">Only chime during 9:00 AM to 10:00 PM</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="scheduleEnabled" checked />
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+
+      <div id="scheduleSection" class="schedule-section">
+        <div class="range-wrap" id="rangeWrap">
+          <div class="range-track"></div>
+          <div class="range-highlight segment-a"></div>
+          <div class="range-highlight segment-b"></div>
+          <div class="range-highlight segment-c"></div>
+
+          <div class="range-tooltip-time" id="startTimeTooltip">9:00 AM</div>
+          <div class="range-tooltip-time" id="endTimeTooltip">10:00 PM</div>
+
+          <div class="range-knob" id="startKnob" aria-label="Start time"></div>
+          <div class="range-knob" id="endKnob" aria-label="End time"></div>
+
+          <div class="range-tooltip-label" id="startLabelTooltip">Start</div>
+          <div class="range-tooltip-label" id="endLabelTooltip">End</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status">Waiting to start</div>
+    <div class="tiny">
+      Keep this tab open. Click once to allow sound.<br />
+      Settings are saved automatically in this browser.
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    let started = false;
+    let lastTriggeredKey = null;
+
+    let startMinutes = 540;
+    let endMinutes = 1320;
+
+    const hhEl = document.getElementById("hh");
+    const mmEl = document.getElementById("mm");
+    const ampmEl = document.getElementById("ampm");
+    const statusEl = document.getElementById("status");
+    const faviconEl = document.getElementById("favicon");
+
+    const startBtn = document.getElementById("startBtn");
+    const testHourBtn = document.getElementById("testHourBtn");
+    const testHalfBtn = document.getElementById("testHalfBtn");
+
+    const volumeSlider = document.getElementById("volumeSlider");
+    const volumeValue = document.getElementById("volumeValue");
+
+    const scheduleEnabledInput = document.getElementById("scheduleEnabled");
+    const notificationsEnabledInput = document.getElementById("notificationsEnabled");
+
+    const scheduleSection = document.getElementById("scheduleSection");
+    const scheduleHint = document.getElementById("scheduleHint");
+    const notificationsHint = document.getElementById("notificationsHint");
+
+    const rangeWrap = document.getElementById("rangeWrap");
+    const startKnob = document.getElementById("startKnob");
+    const endKnob = document.getElementById("endKnob");
+
+    const startLabelTooltip = document.getElementById("startLabelTooltip");
+    const startTimeTooltip = document.getElementById("startTimeTooltip");
+    const endLabelTooltip = document.getElementById("endLabelTooltip");
+    const endTimeTooltip = document.getElementById("endTimeTooltip");
+
+    let activeDrag = null;
+
+    function pad(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function format12Hour(hours24) {
+      const ampm = hours24 >= 12 ? "PM" : "AM";
+      let h = hours24 % 12;
+      if (h === 0) h = 12;
+      return { hour: h, ampm };
+    }
+
+    function minutesToAmPm(minutes) {
+      const normalized = ((minutes % 1440) + 1440) % 1440;
+      const h24 = Math.floor(normalized / 60);
+      const mins = normalized % 60;
+      const formatted = format12Hour(h24);
+      return `${formatted.hour}:${pad(mins)} ${formatted.ampm}`;
+    }
+
+    function snapMinutes(minutes) {
+      const snapped = Math.round(minutes / 15) * 15;
+      return ((snapped % 1440) + 1440) % 1440;
+    }
+
+    function minuteToPercent(minutes) {
+      return (minutes / 1439) * 100;
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const formatted = format12Hour(now.getHours());
+      hhEl.textContent = pad(formatted.hour);
+      mmEl.textContent = pad(now.getMinutes());
+      ampmEl.textContent = formatted.ampm;
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function makeDotFavicon(color) {
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+          <rect width="64" height="64" rx="18" fill="#0f1318"/>
+          <circle cx="32" cy="32" r="15" fill="${color}"/>
+        </svg>
+      `;
+      return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    }
+
+    function updateFavicon() {
+      faviconEl.href = started
+        ? makeDotFavicon("#7edc95")
+        : makeDotFavicon("#8a8a8a");
+    }
+
+    function updateStartButtonUI() {
+      if (started) {
+        startBtn.textContent = "Running";
+        startBtn.classList.remove("stopped");
+        startBtn.classList.add("running");
+      } else {
+        startBtn.textContent = "Stopped";
+        startBtn.classList.remove("running");
+        startBtn.classList.add("stopped");
+      }
+      updateFavicon();
+    }
+
+    function updateVolumeLabel() {
+      volumeValue.textContent = `${volumeSlider.value}%`;
+    }
+
+    function getVolumeMultiplier() {
+      return Number(volumeSlider.value) / 100;
+    }
+
+    function updateScheduleVisibility() {
+      scheduleSection.classList.toggle("hidden", !scheduleEnabledInput.checked);
+      updateScheduleHint();
+    }
+
+    function updateScheduleHint() {
+      if (!scheduleEnabledInput.checked) {
+        scheduleHint.textContent = "Chime all day";
+      } else {
+        scheduleHint.textContent = `Only chime during ${minutesToAmPm(startMinutes)} to ${minutesToAmPm(endMinutes)}`;
+      }
+    }
+
+    function updateNotificationsHint() {
+      notificationsHint.textContent = notificationsEnabledInput.checked
+        ? "Notifications on at :00 and :30"
+        : "Browser alerts at :00 and :30";
+    }
+
+    function updateRangeVisual() {
+      const overnight = endMinutes < startMinutes;
+
+      const startPct = minuteToPercent(startMinutes);
+      const endPct = minuteToPercent(endMinutes);
+
+      document.documentElement.style.setProperty("--range-start", `${startPct}%`);
+      document.documentElement.style.setProperty("--range-end", `${endPct}%`);
+
+      rangeWrap.classList.toggle("overnight", overnight);
+
+      startKnob.style.left = `${startPct}%`;
+      endKnob.style.left = `${endPct}%`;
+
+      startTimeTooltip.textContent = minutesToAmPm(startMinutes);
+      endTimeTooltip.textContent = minutesToAmPm(endMinutes);
+
+      startTimeTooltip.style.left = `${startPct}%`;
+      endTimeTooltip.style.left = `${endPct}%`;
+
+      startLabelTooltip.style.left = `${startPct}%`;
+      endLabelTooltip.style.left = `${endPct}%`;
+
+      updateScheduleHint();
+    }
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === "suspended") {
+        return audioCtx.resume();
+      }
+      return Promise.resolve();
+    }
+
+    function bellTone(startTime, duration = 0.8, baseFreq = 1046.5, volume = 0.05) {
+      const partials = [
+        { ratio: 1.0, gain: 1.0 },
+        { ratio: 2.0, gain: 0.35 },
+        { ratio: 3.01, gain: 0.12 }
+      ];
+
+      partials.forEach(part => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(baseFreq * part.ratio, startTime);
+
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(volume * part.gain, startTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration + 0.05);
+      });
+    }
+
+    function chime(count) {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const baseVolume = 0.10 * getVolumeMultiplier();
+
+      for (let i = 0; i < count; i++) {
+        bellTone(now + i * 0.42, 0.65, 1046.5, baseVolume);
+      }
+    }
+
+    function notify(title, body) {
+      if (!notificationsEnabledInput.checked) return;
+      if (!("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
+      new Notification(title, { body });
+    }
+
+    function isWithinSchedule(now) {
+      if (!scheduleEnabledInput.checked) return true;
+
+      const current = now.getHours() * 60 + now.getMinutes();
+
+      if (startMinutes === endMinutes) {
+        return true;
+      }
+
+      if (endMinutes > startMinutes) {
+        return current >= startMinutes && current <= endMinutes;
+      }
+
+      return current >= startMinutes || current <= endMinutes;
+    }
+
+    function getScheduleText() {
+      if (!scheduleEnabledInput.checked) {
+        return "Schedule off, chimes allowed all day";
+      }
+      return `Schedule on, active from ${minutesToAmPm(startMinutes)} to ${minutesToAmPm(endMinutes)}`;
+    }
+
+    function saveSettings() {
+      localStorage.setItem("kunalClock_startMinutes", String(startMinutes));
+      localStorage.setItem("kunalClock_endMinutes", String(endMinutes));
+      localStorage.setItem("kunalClock_scheduleEnabled", scheduleEnabledInput.checked);
+      localStorage.setItem("kunalClock_notificationsEnabled", notificationsEnabledInput.checked);
+      localStorage.setItem("kunalClock_volume", volumeSlider.value);
+    }
+
+    function loadSettings() {
+      const savedStart = localStorage.getItem("kunalClock_startMinutes");
+      const savedEnd = localStorage.getItem("kunalClock_endMinutes");
+      const savedScheduleEnabled = localStorage.getItem("kunalClock_scheduleEnabled");
+      const savedNotificationsEnabled = localStorage.getItem("kunalClock_notificationsEnabled");
+      const savedVolume = localStorage.getItem("kunalClock_volume");
+
+      if (savedStart !== null) startMinutes = Number(savedStart);
+      if (savedEnd !== null) endMinutes = Number(savedEnd);
+      if (savedScheduleEnabled !== null) scheduleEnabledInput.checked = savedScheduleEnabled === "true";
+      if (savedNotificationsEnabled !== null) notificationsEnabledInput.checked = savedNotificationsEnabled === "true";
+      if (savedVolume !== null) volumeSlider.value = savedVolume;
+
+      updateRangeVisual();
+      updateNotificationsHint();
+    }
+
+    async function syncNotificationToggle() {
+      if (!notificationsEnabledInput.checked) {
+        saveSettings();
+        updateNotificationsHint();
+        setStatus(started ? `Running • Notifications off • ${getScheduleText()}` : `Notifications off • ${getScheduleText()}`);
+        return;
+      }
+
+      if (!("Notification" in window)) {
+        notificationsEnabledInput.checked = false;
+        saveSettings();
+        updateNotificationsHint();
+        setStatus("Notifications not supported in this browser");
+        return;
+      }
+
+      if (Notification.permission === "granted") {
+        saveSettings();
+        updateNotificationsHint();
+        setStatus(started ? `Running • Notifications on • ${getScheduleText()}` : `Notifications on • ${getScheduleText()}`);
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+
+      if (permission !== "granted") {
+        notificationsEnabledInput.checked = false;
+        saveSettings();
+        updateNotificationsHint();
+        setStatus("Notification permission not granted");
+        return;
+      }
+
+      saveSettings();
+      updateNotificationsHint();
+      setStatus(started ? `Running • Notifications on • ${getScheduleText()}` : `Notifications on • ${getScheduleText()}`);
+    }
+
+    function maybeTriggerChime() {
+      if (!started) return;
+
+      const now = new Date();
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+
+      if (s !== 0) return;
+
+      const key = `${h}-${m}`;
+      if (lastTriggeredKey === key) return;
+
+      if (!isWithinSchedule(now)) {
+        lastTriggeredKey = key;
+        return;
+      }
+
+      const formatted = format12Hour(h);
+      const formattedHour = pad(formatted.hour);
+
+      if (m === 0) {
+        chime(2);
+        notify("Top of the hour", `${formattedHour}:00 ${formatted.ampm}`);
+        setStatus(`Chimed twice at ${formattedHour}:00 ${formatted.ampm} • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
+        lastTriggeredKey = key;
+      } else if (m === 30) {
+        chime(1);
+        notify("Half hour", `${formattedHour}:30 ${formatted.ampm}`);
+        setStatus(`Chimed once at ${formattedHour}:30 ${formatted.ampm} • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
+        lastTriggeredKey = key;
+      }
+    }
+
+    async function toggleStartStop() {
+      await ensureAudio();
+      started = !started;
+      updateStartButtonUI();
+
+      if (started) {
+        setStatus(`Running • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
+      } else {
+        setStatus("Stopped");
+      }
+    }
+
+    function pointerXToMinutes(clientX) {
+      const rect = rangeWrap.getBoundingClientRect();
+      const raw = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+      const ratio = rect.width === 0 ? 0 : raw / rect.width;
+      const minutes = Math.round(ratio * 1439);
+      return snapMinutes(minutes);
+    }
+
+    function applyDrag(clientX) {
+      const newMinutes = pointerXToMinutes(clientX);
+
+      if (activeDrag === "start") {
+        startMinutes = newMinutes;
+      } else if (activeDrag === "end") {
+        endMinutes = newMinutes;
+      }
+
+      updateRangeVisual();
+      saveSettings();
+      setStatus(started ? `Running • ${getScheduleText()} • Volume ${volumeSlider.value}%` : `Updated • ${getScheduleText()}`);
+    }
+
+    function startDrag(which, event) {
+      activeDrag = which;
+      applyDrag(event.clientX);
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", stopDrag);
+    }
+
+    function onPointerMove(event) {
+      if (!activeDrag) return;
+      applyDrag(event.clientX);
+    }
+
+    function stopDrag() {
+      activeDrag = null;
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", stopDrag);
+    }
+
+    startKnob.addEventListener("pointerdown", (event) => startDrag("start", event));
+    endKnob.addEventListener("pointerdown", (event) => startDrag("end", event));
+
+    startBtn.addEventListener("click", toggleStartStop);
+
+    testHourBtn.addEventListener("click", async () => {
+      await ensureAudio();
+      chime(2);
+      setStatus(`Tested :00 pattern • Volume ${volumeSlider.value}%`);
+    });
+
+    testHalfBtn.addEventListener("click", async () => {
+      await ensureAudio();
+      chime(1);
+      setStatus(`Tested :30 pattern • Volume ${volumeSlider.value}%`);
+    });
+
+    scheduleEnabledInput.addEventListener("change", () => {
+      updateScheduleVisibility();
+      saveSettings();
+      setStatus(started ? `Running • ${getScheduleText()} • Volume ${volumeSlider.value}%` : `Updated • ${getScheduleText()}`);
+    });
+
+    notificationsEnabledInput.addEventListener("change", syncNotificationToggle);
+
+    volumeSlider.addEventListener("input", () => {
+      updateVolumeLabel();
+      saveSettings();
+      setStatus(started ? `Running • ${getScheduleText()} • Volume ${volumeSlider.value}%` : `Volume set to ${volumeSlider.value}%`);
+    });
+
+    loadSettings();
+    updateVolumeLabel();
+    updateClock();
+    updateStartButtonUI();
+    updateScheduleVisibility();
+    updateRangeVisual();
+
+    setInterval(updateClock, 1000);
+    setInterval(maybeTriggerChime, 250);
+    setStatus(`Waiting to start • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
+  </script>
+</body>
+</html>
