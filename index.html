@@ -3,38 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flowbell - Kunal Clock</title>
-  <link id="favicon" rel="icon" href="" />
+  <title>FlowBell — Gentle Hourly Chimes for Deep Work</title>
+  <meta name="description" content="FlowBell chimes twice every hour and once every half hour to keep you time-aware during deep work. Free, runs in your browser, no install needed." />
+  <meta name="theme-color" content="#0b1118" />
+
+  <!-- Open Graph (WhatsApp, LinkedIn, Slack previews) -->
+  <meta property="og:title" content="FlowBell" />
+  <meta property="og:description" content="A gentle time awareness tool for deep workers. Chimes every hour and half hour so you never lose track of time again." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://flowbell.app" />
+
+  <!-- Twitter / X card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="FlowBell" />
+  <meta name="twitter:description" content="A gentle time awareness tool for deep workers. Chimes every hour and half hour so you never lose track of time again." />
+
+  <link id="favicon" rel="icon" href="data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2218%22%20fill%3D%22%230f1318%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2215%22%20fill%3D%22%238a8a8a%22%2F%3E%3C%2Fsvg%3E" />
   <style>
     :root {
-      --bg1: #07090c;
-      --bg2: #0f1318;
-      --fg: rgba(255, 255, 255, 0.95);
-      --muted: rgba(255, 255, 255, 0.58);
-      --border: rgba(255, 255, 255, 0.14);
-      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-
-      --pastel-green: #bfe7c6;
-      --pastel-green-text: #16311d;
-
-      --pastel-red: #efc1c1;
-      --pastel-red-text: #4a2020;
-
+      --bg1: #05070a;
+      --bg2: #0d1218;
+      --bg3: #131922;
+      --fg: rgba(255, 255, 255, 0.96);
+      --muted: rgba(255, 255, 255, 0.56);
+      --muted-2: rgba(255, 255, 255, 0.42);
+      --border: rgba(255, 255, 255, 0.12);
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.40);
+      --glow: 0 0 0 1px rgba(255,255,255,0.04), 0 20px 40px rgba(0,0,0,0.22);
       --toggle-on: #7edc95;
-      --toggle-off: rgba(255, 255, 255, 0.16);
-
+      --toggle-off: rgba(255, 255, 255, 0.14);
       --range-start: 37.5%;
       --range-end: 58.33%;
+      --volume-fill: 80%;
     }
 
-    * {
-      box-sizing: border-box;
-      user-select: none;
-    }
-
-    html, body {
-      height: 100%;
-    }
+    * { box-sizing: border-box; user-select: none; }
+    html, body { height: 100%; }
 
     body {
       margin: 0;
@@ -42,495 +46,464 @@
       color: var(--fg);
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
       background:
-        radial-gradient(circle at top left, rgba(126, 220, 149, 0.08), transparent 28%),
-        radial-gradient(circle at top right, rgba(255, 255, 255, 0.05), transparent 22%),
-        linear-gradient(160deg, var(--bg1), var(--bg2));
+        radial-gradient(circle at 12% 10%, rgba(126, 220, 149, 0.10), transparent 22%),
+        radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.06), transparent 20%),
+        radial-gradient(circle at 50% 100%, rgba(126, 220, 149, 0.06), transparent 28%),
+        linear-gradient(160deg, var(--bg1), var(--bg2) 50%, var(--bg3));
       display: grid;
       place-items: center;
       padding: 28px;
+      overflow-x: hidden;
     }
 
-    .wrap {
-      width: min(1020px, 95vw);
-      text-align: center;
+    .wrap { width: min(1040px, 95vw); text-align: center; }
+
+    .hero-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: var(--glow);
     }
+    .hero-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+      transition: 0.25s ease;
+    }
+    .hero-dot.running { background: #7edc95; box-shadow: 0 0 16px rgba(126,220,149,0.65); }
+    .hero-meta span, .hero-title { font-size: 0.84rem; font-weight: 600; color: rgba(255,255,255,0.78); margin: 0; padding: 0; }
 
     .clock {
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 14px;
-      margin-bottom: 22px;
+      margin-bottom: 14px;
       flex-wrap: wrap;
     }
 
-    .box,
-    .ampm {
+    .box, .ampm {
       position: relative;
       overflow: hidden;
-      border-radius: 24px;
+      border-radius: 28px;
       border: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.14);
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+      backdrop-filter: blur(22px) saturate(120%);
+      -webkit-backdrop-filter: blur(22px) saturate(120%);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.16);
     }
-
-    .box::before,
-    .ampm::before,
-    .panel::before {
+    .box::before, .ampm::before, .panel::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(255,255,255,0.12), transparent 40%);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), transparent 38%);
       pointer-events: none;
     }
-
+    .box::after, .ampm::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; top: 50%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+      pointer-events: none;
+    }
     .box {
-      width: 180px;
-      height: 220px;
-      display: grid;
-      place-items: center;
-      font-size: 8rem;
-      font-weight: 700;
-      letter-spacing: 2px;
+      width: 180px; height: 220px; display: grid; place-items: center;
+      font-size: 8rem; font-weight: 700; letter-spacing: 1px;
+      text-shadow: 0 8px 30px rgba(0,0,0,0.28);
     }
-
     .colon {
-      width: 40px;
-      height: 220px;
-      display: grid;
-      place-items: center;
-      font-size: 6rem;
-      color: rgba(255,255,255,0.72);
+      width: 40px; height: 220px; display: grid; place-items: center;
+      font-size: 6rem; color: rgba(255,255,255,0.72);
+      text-shadow: 0 8px 24px rgba(0,0,0,0.24);
+      transition: opacity 0.15s ease;
     }
-
+    .colon.dim { opacity: 0.18; }
     .ampm {
-      width: 110px;
-      height: 220px;
-      display: grid;
-      place-items: center;
-      font-size: 2.6rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-      color: rgba(255,255,255,0.9);
+      width: 110px; height: 220px; display: grid; place-items: center;
+      font-size: 2.45rem; font-weight: 700; letter-spacing: 0.6px;
+      color: rgba(255,255,255,0.92);
     }
 
-    .sub {
-      color: var(--muted);
-      margin-bottom: 24px;
-      font-size: 0.96rem;
-      letter-spacing: 0.2px;
-    }
+    .sub { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; }
 
     .controls {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 18px;
     }
-
+    .controls-main {
+      display: flex; gap: 20px; justify-content: center; align-items: center;
+    }
+    .controls-test {
+      display: flex; gap: 12px; justify-content: center;
+    }
     button {
-      border: none;
-      border-radius: 999px;
-      padding: 12px 18px;
-      font-size: 0.95rem;
-      cursor: pointer;
-      font-weight: 700;
-      transition: 0.2s ease;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+      border: none; cursor: pointer; font-weight: 700;
+      transition: transform 0.18s ease, box-shadow 0.22s ease, background 0.22s ease, opacity 0.22s ease;
+    }
+    button:hover { transform: translateY(-2px); }
+    button:active { transform: translateY(0px); }
+
+    /* Play button — pill shape */
+    #playBtn {
+      display: flex; align-items: center; justify-content: center; gap: 11px;
+      height: 66px; padding: 0 36px; border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.45);
+      font-size: 1.05rem; letter-spacing: 0.3px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    }
+    #playBtn svg { flex-shrink: 0; transition: color 0.22s ease; }
+    #playBtn.active {
+      background: linear-gradient(160deg, #b8f0c8, #9de8b0);
+      border-color: rgba(126,220,149,0.5);
+      color: #0f3320;
+      box-shadow: 0 0 32px rgba(126,220,149,0.30), 0 12px 28px rgba(0,0,0,0.20);
     }
 
-    button.secondary {
-      background: rgba(255,255,255,0.08);
-      color: var(--fg);
-      border: 1px solid rgba(255,255,255,0.12);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+    /* Stop button — circle */
+    #stopBtn {
+      display: flex; align-items: center; justify-content: center;
+      width: 66px; height: 66px; border-radius: 50%;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.45);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    }
+    #stopBtn.active {
+      background: linear-gradient(160deg, #f5b8b8, #efa0a0);
+      border-color: rgba(240,130,130,0.5);
+      color: #4a1010;
+      box-shadow: 0 0 32px rgba(240,130,130,0.28), 0 12px 28px rgba(0,0,0,0.20);
     }
 
-    #startBtn.running {
-      background: var(--pastel-green);
-      color: var(--pastel-green-text);
+    /* Test buttons */
+    .btn-test {
+      border: 1px solid rgba(255,255,255,0.10); border-radius: 999px;
+      padding: 7px 14px; font-size: 0.78rem; font-weight: 600;
+      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     }
-
-    #startBtn.stopped {
-      background: var(--pastel-red);
-      color: var(--pastel-red-text);
-    }
+    .btn-test:hover { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.9); }
 
     .panel {
       position: relative;
-      width: min(840px, 100%);
+      width: min(860px, 100%);
       margin: 0 auto 14px;
       padding: 18px 18px 20px;
-      border-radius: 28px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.05));
+      border-radius: 30px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.045));
       border: 1px solid var(--border);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      box-shadow: var(--shadow);
+      backdrop-filter: blur(24px) saturate(130%);
+      -webkit-backdrop-filter: blur(24px) saturate(130%);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.10);
       text-align: left;
       overflow: hidden;
     }
-
-    .panel-title {
-      text-align: center;
-      font-size: 0.97rem;
-      color: rgba(255,255,255,0.88);
-      margin-bottom: 16px;
-      font-weight: 700;
-      letter-spacing: 0.2px;
+    .panel.collapsed { padding-bottom: 20px; }
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      margin-bottom: 10px; padding: 2px 4px 10px;
     }
+    .panel.collapsed .panel-header { margin-bottom: 0; padding-bottom: 0; }
+    .panel-title-wrap { display: flex; flex-direction: column; gap: 2px; }
+    .panel-title { font-size: 0.98rem; color: rgba(255,255,255,0.92); font-weight: 700; }
+    .panel-subtitle { font-size: 0.79rem; color: var(--muted-2); transition: opacity 0.2s ease; }
+    .panel:not(.collapsed) .panel-subtitle { opacity: 0; pointer-events: none; }
+    .panel-toggle {
+      padding: 9px 14px; font-size: 0.82rem; font-weight: 700; border-radius: 999px;
+      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.9);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      box-shadow: none;
+    }
+    .panel-body { overflow: hidden; max-height: 900px; opacity: 1; transition: max-height 0.28s ease, opacity 0.22s ease; }
+    .panel.collapsed .panel-body { max-height: 0; opacity: 0; pointer-events: none; }
 
     .control-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-      padding: 14px 10px;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: space-between; gap: 18px;
+      padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.07); border-radius: 20px;
+      transition: background 0.2s ease;
     }
+    .control-row:hover { background: rgba(255,255,255,0.03); }
+    .control-row:first-of-type { border-top: none; padding-top: 8px; }
+    .control-left { display: flex; flex-direction: column; gap: 4px; }
+    .control-label { font-size: 0.95rem; color: rgba(255,255,255,0.93); font-weight: 600; }
+    .control-hint { font-size: 0.82rem; color: var(--muted); line-height: 1.35; }
 
-    .control-row:first-of-type {
-      border-top: none;
-      padding-top: 6px;
-    }
-
-    .control-left {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .control-label {
-      font-size: 0.95rem;
-      color: rgba(255,255,255,0.92);
-      font-weight: 600;
-    }
-
-    .control-hint {
-      font-size: 0.82rem;
-      color: var(--muted);
-      transition: 0.2s ease;
-    }
-
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 56px;
-      height: 32px;
-      flex: 0 0 auto;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
+    .switch { position: relative; display: inline-block; width: 56px; height: 32px; flex: 0 0 auto; }
+    .switch input { opacity: 0; width: 0; height: 0; }
     .slider-toggle {
-      position: absolute;
-      inset: 0;
-      border-radius: 999px;
-      background: var(--toggle-off);
-      border: 1px solid rgba(255,255,255,0.12);
-      transition: 0.2s ease;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      cursor: pointer;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      position: absolute; inset: 0; border-radius: 999px; background: var(--toggle-off);
+      border: 1px solid rgba(255,255,255,0.10); transition: 0.22s ease;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 6px 18px rgba(0,0,0,0.12);
     }
-
     .slider-toggle:before {
-      content: "";
-      position: absolute;
-      width: 24px;
-      height: 24px;
-      left: 3px;
-      top: 3px;
-      border-radius: 50%;
-      background: white;
-      transition: 0.2s ease;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+      content: ""; position: absolute; width: 24px; height: 24px; left: 3px; top: 3px;
+      border-radius: 50%; background: linear-gradient(180deg, rgba(255,255,255,1), rgba(240,240,240,0.96));
+      transition: 0.22s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.18);
     }
-
     .switch input:checked + .slider-toggle {
-      background: var(--toggle-on);
-      border-color: rgba(126,220,149,0.9);
+      background: var(--toggle-on); border-color: rgba(126,220,149,0.92);
+      box-shadow: 0 0 18px rgba(126,220,149,0.28), inset 0 1px 0 rgba(255,255,255,0.10);
     }
+    .switch input:checked + .slider-toggle:before { transform: translateX(24px); }
 
-    .switch input:checked + .slider-toggle:before {
-      transform: translateX(24px);
-    }
-
-    .volume-wrap {
-      width: min(360px, 62vw);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
+    .volume-wrap { width: min(360px, 62vw); display: flex; align-items: center; gap: 12px; }
     .volume-wrap input[type="range"] {
-      width: 100%;
-      accent-color: #d7d7d7;
-      cursor: pointer;
+      width: 100%; cursor: grab; -webkit-appearance: none; appearance: none; background: transparent;
     }
-
-    .volume-value {
-      min-width: 48px;
-      text-align: right;
-      font-size: 0.9rem;
-      color: rgba(255,255,255,0.92);
-    }
-
-    .schedule-section {
-      margin-top: 8px;
-      padding-top: 8px;
-    }
-
-    .schedule-section.hidden {
-      display: none;
-    }
-
-    .range-wrap {
-      position: relative;
-      width: min(720px, 94%);
-      margin: 4px auto 6px;
-      height: 126px;
-      touch-action: none;
-    }
-
-    .range-track {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 60px;
-      height: 12px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.10);
+    .volume-wrap input[type="range"]:active { cursor: grabbing; }
+    .volume-wrap input[type="range"]::-webkit-slider-runnable-track {
+      height: 10px; border-radius: 999px;
+      background: linear-gradient(90deg,
+        #60b8ff 0%,
+        #0a6edf var(--volume-fill),
+        rgba(255,255,255,0.18) var(--volume-fill),
+        rgba(255,255,255,0.18) 100%);
       border: 1px solid rgba(255,255,255,0.06);
-      overflow: hidden;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
     }
-
-    .range-highlight {
-      position: absolute;
-      top: 60px;
-      height: 12px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, rgba(191,231,198,0.92), rgba(126,220,149,0.9));
-      box-shadow: 0 0 14px rgba(126,220,149,0.24);
-      z-index: 1;
-    }
-
-    .range-highlight.segment-a {
-      left: var(--range-start);
-      width: calc(var(--range-end) - var(--range-start));
-    }
-
-    .range-highlight.segment-b {
-      left: 0;
-      width: var(--range-end);
-      display: none;
-    }
-
-    .range-highlight.segment-c {
-      left: var(--range-start);
-      width: calc(100% - var(--range-start));
-      display: none;
-    }
-
-    .range-wrap.overnight .segment-a {
-      display: none;
-    }
-
-    .range-wrap.overnight .segment-b,
-    .range-wrap.overnight .segment-c {
-      display: block;
-    }
-
-    .range-knob {
-      position: absolute;
-      top: 54px;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      box-shadow: 0 8px 18px rgba(0,0,0,0.24);
-      transform: translateX(-50%);
-      z-index: 4;
+    .volume-wrap input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 34px; height: 26px; border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(240,240,240,0.96));
+      border: 1px solid rgba(255,255,255,0.85); box-shadow: 0 8px 18px rgba(0,0,0,0.22); margin-top: -9px;
       cursor: grab;
     }
-
-    .range-knob:active {
-      cursor: grabbing;
+    .volume-wrap input[type="range"]:active::-webkit-slider-thumb { cursor: grabbing; }
+    .volume-wrap input[type="range"]::-moz-range-track {
+      height: 10px; border-radius: 999px; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.06);
     }
-
-    #startKnob {
-      background: linear-gradient(180deg, #d7f2dc, #bfe7c6);
-      border: 1px solid rgba(191, 231, 198, 0.95);
+    .volume-wrap input[type="range"]::-moz-range-progress { height: 10px; border-radius: 999px; background: linear-gradient(90deg, #60b8ff, #0a6edf); }
+    .volume-wrap input[type="range"]::-moz-range-thumb {
+      width: 34px; height: 26px; border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(240,240,240,0.96));
+      border: 1px solid rgba(255,255,255,0.85); box-shadow: 0 8px 18px rgba(0,0,0,0.22);
+      cursor: grab;
     }
+    .volume-value { min-width: 48px; text-align: right; font-size: 0.9rem; color: rgba(255,255,255,0.92); font-weight: 600; }
 
-    #endKnob {
-      background: linear-gradient(180deg, #f6d7d7, #efc1c1);
-      border: 1px solid rgba(239, 193, 193, 0.95);
+    .schedule-section { margin-top: 4px; padding-top: 4px; }
+    .schedule-section.hidden { display: none; }
+    .range-wrap { position: relative; width: min(720px, 94%); margin: 6px auto 2px; height: 126px; touch-action: none; }
+    .range-track {
+      position: absolute; left: 0; right: 0; top: 60px; height: 12px; border-radius: 999px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
     }
-
+    .range-highlight {
+      position: absolute; top: 60px; height: 12px; border-radius: 999px;
+      background: linear-gradient(90deg, #60b8ff 0%, #0a6edf 100%);
+      box-shadow: 0 0 18px rgba(10,132,255,0.20); z-index: 1;
+    }
+    .range-highlight.segment-a { left: var(--range-start); width: calc(var(--range-end) - var(--range-start)); }
+    .range-highlight.segment-b { left: 0; width: var(--range-end); display: none; }
+    .range-highlight.segment-c { left: var(--range-start); width: calc(100% - var(--range-start)); display: none; }
+    .range-wrap.overnight .segment-a { display: none; }
+    .range-wrap.overnight .segment-b, .range-wrap.overnight .segment-c { display: block; }
+    .range-knob {
+      position: absolute; top: 53px; width: 34px; height: 26px; border-radius: 999px;
+      background: linear-gradient(180deg, #f7f9fb, #eceff3);
+      border: 1px solid rgba(255,255,255,0.88);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.24); transform: translateX(-50%); z-index: 4; cursor: grab;
+      transition: box-shadow 0.18s ease, transform 0.18s ease;
+    }
+    .range-knob:hover { box-shadow: 0 0 0 6px rgba(255,255,255,0.05), 0 12px 24px rgba(0,0,0,0.28); }
+    .range-knob:active { cursor: grabbing; transform: translateX(-50%) scale(1.04); }
     .range-tooltip-time {
-      position: absolute;
-      top: 18px;
-      transform: translateX(-50%);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      box-shadow: 0 12px 24px rgba(0,0,0,0.22);
-      z-index: 5;
-      white-space: nowrap;
-      padding: 7px 10px;
-      border-radius: 12px;
-      font-size: 0.82rem;
-      background: rgba(18, 20, 24, 0.84);
-      color: rgba(255,255,255,0.96);
-      border: 1px solid rgba(255,255,255,0.10);
-      min-width: 76px;
-      text-align: center;
-      pointer-events: none;
+      position: absolute; top: 18px; transform: translateX(-50%);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 12px 24px rgba(0,0,0,0.22);
+      z-index: 5; white-space: nowrap; padding: 7px 10px; border-radius: 12px; font-size: 0.82rem;
+      background: rgba(18, 20, 24, 0.84); color: rgba(255,255,255,0.96); border: 1px solid rgba(255,255,255,0.10);
+      min-width: 76px; text-align: center; pointer-events: none;
     }
-
     .range-tooltip-label {
-      position: absolute;
-      top: 92px;
-      transform: translateX(-50%);
-      z-index: 5;
-      white-space: nowrap;
-      font-size: 0.74rem;
-      font-weight: 700;
-      letter-spacing: 0.2px;
-      color: rgba(255,255,255,0.82);
-      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
-      pointer-events: none;
+      position: absolute; top: 94px; transform: translateX(-50%); z-index: 5; white-space: nowrap;
+      font-size: 0.74rem; font-weight: 700; letter-spacing: 0.24px; color: rgba(255,255,255,0.78);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35); pointer-events: none;
     }
 
     .status {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-top: 10px;
+      margin-top: 14px; display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px;
+      border-radius: 999px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+      color: var(--muted); font-size: 0.86rem; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--glow);
     }
-
-    .tiny {
-      margin-top: 18px;
-      color: var(--muted);
-      font-size: 0.8rem;
-      line-height: 1.5;
+    .about {
+      margin-top: 32px;
+      padding: 20px 24px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      text-align: left;
+      max-width: min(860px, 100%);
+      margin-left: auto; margin-right: auto;
     }
+    .about p {
+      font-size: 0.82rem; color: var(--muted); line-height: 1.7;
+      margin: 0 0 10px 0;
+    }
+    .about p:last-child { margin-bottom: 0; }
+    .tiny { margin-top: 18px; color: var(--muted-2); font-size: 0.78rem; line-height: 1.5; }
+    .footer { margin-top: 40px; padding-top: 20px; 
+      border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .footer-credit {
+      font-size: 0.78rem; color: var(--muted-2);
+    }
+    .footer-credit a {
+      color: rgba(255,255,255,0.5); text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    .footer-credit a:hover { color: rgba(255,255,255,0.85); }
+    .bmc-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 999px; border: none; cursor: pointer;
+      background: linear-gradient(160deg, #fde68a, #f9c548);
+      color: #5a3a00; font-size: 0.86rem; font-weight: 700;
+      box-shadow: 0 6px 20px rgba(249,197,72,0.22), 0 2px 8px rgba(0,0,0,0.14);
+      text-decoration: none;
+      transition: transform 0.18s ease, box-shadow 0.22s ease;
+    }
+    .bmc-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(249,197,72,0.32), 0 4px 10px rgba(0,0,0,0.16); }
 
     @media (max-width: 700px) {
-      .box {
-        width: 118px;
-        height: 146px;
-        font-size: 5rem;
-      }
-
-      .colon {
-        height: 146px;
-        font-size: 4rem;
-      }
-
-      .ampm {
-        width: 82px;
-        height: 146px;
-        font-size: 2rem;
-      }
-
-      .control-row {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .volume-wrap {
-        width: 100%;
-      }
+      body { padding: 18px; }
+      .hero-meta { margin-bottom: 14px; }
+      .box { width: 118px; height: 146px; font-size: 5rem; }
+      .colon { height: 146px; font-size: 4rem; }
+      .ampm { width: 82px; height: 146px; font-size: 2rem; }
+      .control-row { flex-direction: column; align-items: flex-start; }
+      .volume-wrap { width: 100%; }
+      .range-wrap { width: 100%; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
+    <div class="hero-meta">
+      <div class="hero-dot" id="heroDot"></div>
+      <h1 class="hero-title">FlowBell</h1>
+    </div>
+
     <div class="clock">
       <div class="box" id="hh">12</div>
-      <div class="colon">:</div>
+      <div class="colon" id="colonEl">:</div>
       <div class="box" id="mm">00</div>
       <div class="ampm" id="ampm">AM</div>
     </div>
 
-    <div class="sub">
-      :00 = 2 short chimes • :30 = 1 short chime
-    </div>
+    <div class="sub">xx:00 = 2 short chimes &nbsp;•&nbsp; xx:30 = 1 short chime</div>
 
     <div class="controls">
-      <button id="startBtn" class="stopped">Stopped</button>
-      <button id="testHourBtn" class="secondary">Test :00</button>
-      <button id="testHalfBtn" class="secondary">Test :30</button>
+      <div class="controls-main">
+        <!-- Play button: pill with rounded triangle -->
+        <button id="playBtn" aria-label="Start FlowBell chimes">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 4.5C6 3.7 6.9 3.2 7.6 3.6L20.1 10.9C20.7 11.3 20.7 12.1 20.1 12.5L7.6 19.8C6.9 20.3 6 19.8 6 19V4.5Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+          </svg>
+          Start
+        </button>
+        <!-- Stop button: circle with rounded square -->
+        <button id="stopBtn" class="active" aria-label="Stop FlowBell chimes">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="14" height="14" rx="3.5" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+      <div class="controls-test">
+        <button id="testHourBtn" class="btn-test">Test xx:00</button>
+        <button id="testHalfBtn" class="btn-test">Test xx:30</button>
+      </div>
     </div>
 
-    <div class="panel">
-      <div class="panel-title">Chime controls</div>
-
-      <div class="control-row">
-        <div class="control-left">
-          <div class="control-label">Volume</div>
-          <div class="control-hint">Adjust chime loudness</div>
+    <div class="panel collapsed" id="controlsPanel">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <div class="panel-title">FlowBell Controls</div>
+          <div class="panel-subtitle">Volume, notifications &amp; schedule</div>
         </div>
-        <div class="volume-wrap">
-          <input type="range" id="volumeSlider" min="1" max="100" value="50" />
-          <div class="volume-value" id="volumeValue">50%</div>
-        </div>
+        <button class="panel-toggle" id="panelToggle" aria-expanded="false" aria-controls="panelBody">Show</button>
       </div>
 
-      <div class="control-row">
-        <div class="control-left">
-          <div class="control-label">Enable notifications</div>
-          <div class="control-hint" id="notificationsHint">Browser alerts at :00 and :30</div>
+      <div class="panel-body" id="panelBody">
+        <div class="control-row">
+          <div class="control-left">
+            <div class="control-label">Volume</div>
+            <div class="control-hint">Adjust FlowBell loudness</div>
+          </div>
+          <div class="volume-wrap">
+            <input type="range" id="volumeSlider" min="1" max="100" value="80" />
+            <div class="volume-value" id="volumeValue">50%</div>
+          </div>
         </div>
-        <label class="switch">
-          <input type="checkbox" id="notificationsEnabled" />
-          <span class="slider-toggle"></span>
-        </label>
-      </div>
 
-      <div class="control-row">
-        <div class="control-left">
-          <div class="control-label">Use schedule window</div>
-          <div class="control-hint" id="scheduleHint">Only chime during 9:00 AM to 10:00 PM</div>
+        <div class="control-row">
+          <div class="control-left">
+            <div class="control-label">Enable notifications</div>
+            <div class="control-hint" id="notificationsHint">Browser alerts at :00 and :30</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="notificationsEnabled" />
+            <span class="slider-toggle"></span>
+          </label>
         </div>
-        <label class="switch">
-          <input type="checkbox" id="scheduleEnabled" checked />
-          <span class="slider-toggle"></span>
-        </label>
-      </div>
 
-      <div id="scheduleSection" class="schedule-section">
-        <div class="range-wrap" id="rangeWrap">
-          <div class="range-track"></div>
-          <div class="range-highlight segment-a"></div>
-          <div class="range-highlight segment-b"></div>
-          <div class="range-highlight segment-c"></div>
+        <div class="control-row">
+          <div class="control-left">
+            <div class="control-label">Use schedule window</div>
+            <div class="control-hint" id="scheduleHint">Only ring during 9:00 AM to 10:00 PM</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="scheduleEnabled" checked />
+            <span class="slider-toggle"></span>
+          </label>
+        </div>
 
-          <div class="range-tooltip-time" id="startTimeTooltip">9:00 AM</div>
-          <div class="range-tooltip-time" id="endTimeTooltip">10:00 PM</div>
+        <div id="scheduleSection" class="schedule-section">
+          <div class="range-wrap" id="rangeWrap">
+            <div class="range-track"></div>
+            <div class="range-highlight segment-a"></div>
+            <div class="range-highlight segment-b"></div>
+            <div class="range-highlight segment-c"></div>
 
-          <div class="range-knob" id="startKnob" aria-label="Start time"></div>
-          <div class="range-knob" id="endKnob" aria-label="End time"></div>
+            <div class="range-tooltip-time" id="startTimeTooltip">9:00 AM</div>
+            <div class="range-tooltip-time" id="endTimeTooltip">10:00 PM</div>
 
-          <div class="range-tooltip-label" id="startLabelTooltip">Start</div>
-          <div class="range-tooltip-label" id="endLabelTooltip">End</div>
+            <div class="range-knob" id="startKnob" aria-label="Start time"></div>
+            <div class="range-knob" id="endKnob" aria-label="End time"></div>
+
+            <div class="range-tooltip-label" id="startLabelTooltip">Start</div>
+            <div class="range-tooltip-label" id="endLabelTooltip">End</div>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="status" id="status">Waiting to start</div>
-    <div class="tiny">
-      Keep this tab open. Click once to allow sound.<br />
-      Settings are saved automatically in this browser.
+    <div class="tiny">Keep this tab open. Click once to allow sound.<br />Settings are saved automatically in this browser.</div>
+
+    <div class="about">
+      <p>FlowBell is a free browser-based hourly chime clock designed for deep work and focus sessions. When you're in flow, time slips away unnoticed — FlowBell gently rings twice at every hour and once at every half hour, keeping you passively aware of time without breaking your concentration.</p>
+      <p>No app to install, no account needed. Simply open the tab, click Start, and let the chimes run in the background. Use the schedule window to silence chimes during sleeping hours, and enable browser notifications for an extra nudge when you're working in another tab.</p>
+      <p>Perfect for remote workers, freelancers, students, and anyone who loses track of time during long work sessions. Works on any browser, on any device — completely free.</p>
+    </div>
+
+    <div class="footer">
+      <p class="footer-credit">Developed with ☕ by <a href="https://kunalkava.com" target="_blank" rel="noopener">Kunal Kava</a></p>
+      <a class="bmc-btn" href="https://buymeacoffee.com/kunalkava" target="_blank" rel="noopener">
+        ☕ Buy me a coffee
+      </a>
     </div>
   </div>
 
@@ -538,52 +511,45 @@
     let audioCtx = null;
     let started = false;
     let lastTriggeredKey = null;
-
-    let startMinutes = 540;
-    let endMinutes = 1320;
-
-    const hhEl = document.getElementById("hh");
-    const mmEl = document.getElementById("mm");
-    const ampmEl = document.getElementById("ampm");
-    const statusEl = document.getElementById("status");
-    const faviconEl = document.getElementById("favicon");
-
-    const startBtn = document.getElementById("startBtn");
-    const testHourBtn = document.getElementById("testHourBtn");
-    const testHalfBtn = document.getElementById("testHalfBtn");
-
-    const volumeSlider = document.getElementById("volumeSlider");
-    const volumeValue = document.getElementById("volumeValue");
-
-    const scheduleEnabledInput = document.getElementById("scheduleEnabled");
-    const notificationsEnabledInput = document.getElementById("notificationsEnabled");
-
-    const scheduleSection = document.getElementById("scheduleSection");
-    const scheduleHint = document.getElementById("scheduleHint");
-    const notificationsHint = document.getElementById("notificationsHint");
-
-    const rangeWrap = document.getElementById("rangeWrap");
-    const startKnob = document.getElementById("startKnob");
-    const endKnob = document.getElementById("endKnob");
-
-    const startLabelTooltip = document.getElementById("startLabelTooltip");
-    const startTimeTooltip = document.getElementById("startTimeTooltip");
-    const endLabelTooltip = document.getElementById("endLabelTooltip");
-    const endTimeTooltip = document.getElementById("endTimeTooltip");
-
+    let startMinutes = 540;   // 9:00 AM
+    let endMinutes = 1020;    // 5:00 PM
     let activeDrag = null;
 
-    function pad(n) {
-      return String(n).padStart(2, "0");
-    }
+    const hhEl = document.getElementById('hh');
+    const mmEl = document.getElementById('mm');
+    const ampmEl = document.getElementById('ampm');
+    const colonEl = document.getElementById('colonEl');
+    const statusEl = document.getElementById('status');
+    const faviconEl = document.getElementById('favicon');
+    const heroDot = document.getElementById('heroDot');
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const testHourBtn = document.getElementById('testHourBtn');
+    const testHalfBtn = document.getElementById('testHalfBtn');
+    const panel = document.getElementById('controlsPanel');
+    const panelToggle = document.getElementById('panelToggle');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeValue = document.getElementById('volumeValue');
+    const scheduleEnabledInput = document.getElementById('scheduleEnabled');
+    const notificationsEnabledInput = document.getElementById('notificationsEnabled');
+    const scheduleSection = document.getElementById('scheduleSection');
+    const scheduleHint = document.getElementById('scheduleHint');
+    const notificationsHint = document.getElementById('notificationsHint');
+    const rangeWrap = document.getElementById('rangeWrap');
+    const startKnob = document.getElementById('startKnob');
+    const endKnob = document.getElementById('endKnob');
+    const startLabelTooltip = document.getElementById('startLabelTooltip');
+    const startTimeTooltip = document.getElementById('startTimeTooltip');
+    const endLabelTooltip = document.getElementById('endLabelTooltip');
+    const endTimeTooltip = document.getElementById('endTimeTooltip');
 
+    function pad(n) { return String(n).padStart(2, '0'); }
     function format12Hour(hours24) {
-      const ampm = hours24 >= 12 ? "PM" : "AM";
+      const ampm = hours24 >= 12 ? 'PM' : 'AM';
       let h = hours24 % 12;
       if (h === 0) h = 12;
       return { hour: h, ampm };
     }
-
     function minutesToAmPm(minutes) {
       const normalized = ((minutes % 1440) + 1440) % 1440;
       const h24 = Math.floor(normalized / 60);
@@ -591,15 +557,11 @@
       const formatted = format12Hour(h24);
       return `${formatted.hour}:${pad(mins)} ${formatted.ampm}`;
     }
-
     function snapMinutes(minutes) {
       const snapped = Math.round(minutes / 15) * 15;
       return ((snapped % 1440) + 1440) % 1440;
     }
-
-    function minuteToPercent(minutes) {
-      return (minutes / 1439) * 100;
-    }
+    function minuteToPercent(minutes) { return (minutes / 1439) * 100; }
 
     function updateClock() {
       const now = new Date();
@@ -607,191 +569,140 @@
       hhEl.textContent = pad(formatted.hour);
       mmEl.textContent = pad(now.getMinutes());
       ampmEl.textContent = formatted.ampm;
+      // Blink colon: dim on odd seconds, bright on even
+      colonEl.classList.toggle('dim', now.getSeconds() % 2 !== 0);
     }
-
-    function setStatus(text) {
-      statusEl.textContent = text;
-    }
+    function setStatus(text) { statusEl.textContent = text; }
 
     function makeDotFavicon(color) {
-      const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-          <rect width="64" height="64" rx="18" fill="#0f1318"/>
-          <circle cx="32" cy="32" r="15" fill="${color}"/>
-        </svg>
-      `;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="#0f1318"/><circle cx="32" cy="32" r="15" fill="${color}"/></svg>`;
       return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
     }
-
     function updateFavicon() {
-      faviconEl.href = started
-        ? makeDotFavicon("#7edc95")
-        : makeDotFavicon("#8a8a8a");
+      faviconEl.href = started ? makeDotFavicon('#7edc95') : makeDotFavicon('#8a8a8a');
+      heroDot.classList.toggle('running', started);
     }
-
     function updateStartButtonUI() {
       if (started) {
-        startBtn.textContent = "Running";
-        startBtn.classList.remove("stopped");
-        startBtn.classList.add("running");
+        playBtn.classList.add('active');
+        stopBtn.classList.remove('active');
       } else {
-        startBtn.textContent = "Stopped";
-        startBtn.classList.remove("running");
-        startBtn.classList.add("stopped");
+        playBtn.classList.remove('active');
+        stopBtn.classList.add('active');
       }
       updateFavicon();
     }
-
     function updateVolumeLabel() {
       volumeValue.textContent = `${volumeSlider.value}%`;
+      document.documentElement.style.setProperty('--volume-fill', `${volumeSlider.value}%`);
     }
-
-    function getVolumeMultiplier() {
-      return Number(volumeSlider.value) / 100;
-    }
-
+    function getVolumeMultiplier() { return Number(volumeSlider.value) / 100; }
     function updateScheduleVisibility() {
-      scheduleSection.classList.toggle("hidden", !scheduleEnabledInput.checked);
+      scheduleSection.classList.toggle('hidden', !scheduleEnabledInput.checked);
       updateScheduleHint();
     }
-
     function updateScheduleHint() {
       if (!scheduleEnabledInput.checked) {
-        scheduleHint.textContent = "Chime all day";
+        scheduleHint.textContent = 'FlowBell rings all day';
       } else {
-        scheduleHint.textContent = `Only chime during ${minutesToAmPm(startMinutes)} to ${minutesToAmPm(endMinutes)}`;
+        scheduleHint.textContent = `Only ring during ${minutesToAmPm(startMinutes)} to ${minutesToAmPm(endMinutes)}`;
       }
     }
-
     function updateNotificationsHint() {
-      notificationsHint.textContent = notificationsEnabledInput.checked
-        ? "Notifications on at :00 and :30"
-        : "Browser alerts at :00 and :30";
+      notificationsHint.textContent = notificationsEnabledInput.checked ? 'Notifications on at :00 and :30' : 'Browser alerts at :00 and :30';
     }
-
     function updateRangeVisual() {
       const overnight = endMinutes < startMinutes;
-
       const startPct = minuteToPercent(startMinutes);
       const endPct = minuteToPercent(endMinutes);
-
-      document.documentElement.style.setProperty("--range-start", `${startPct}%`);
-      document.documentElement.style.setProperty("--range-end", `${endPct}%`);
-
-      rangeWrap.classList.toggle("overnight", overnight);
-
+      document.documentElement.style.setProperty('--range-start', `${startPct}%`);
+      document.documentElement.style.setProperty('--range-end', `${endPct}%`);
+      rangeWrap.classList.toggle('overnight', overnight);
       startKnob.style.left = `${startPct}%`;
       endKnob.style.left = `${endPct}%`;
-
       startTimeTooltip.textContent = minutesToAmPm(startMinutes);
       endTimeTooltip.textContent = minutesToAmPm(endMinutes);
-
       startTimeTooltip.style.left = `${startPct}%`;
       endTimeTooltip.style.left = `${endPct}%`;
-
       startLabelTooltip.style.left = `${startPct}%`;
       endLabelTooltip.style.left = `${endPct}%`;
-
       updateScheduleHint();
     }
 
     function ensureAudio() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === "suspended") {
-        return audioCtx.resume();
-      }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') return audioCtx.resume();
       return Promise.resolve();
     }
-
     function bellTone(startTime, duration = 0.8, baseFreq = 1046.5, volume = 0.05) {
       const partials = [
         { ratio: 1.0, gain: 1.0 },
         { ratio: 2.0, gain: 0.35 },
         { ratio: 3.01, gain: 0.12 }
       ];
-
       partials.forEach(part => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-
-        osc.type = "sine";
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(baseFreq * part.ratio, startTime);
-
         gain.gain.setValueAtTime(0.0001, startTime);
         gain.gain.exponentialRampToValueAtTime(volume * part.gain, startTime + 0.01);
         gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-
         osc.start(startTime);
         osc.stop(startTime + duration + 0.05);
       });
     }
-
     function chime(count) {
       if (!audioCtx) return;
       const now = audioCtx.currentTime;
       const baseVolume = 0.10 * getVolumeMultiplier();
-
-      for (let i = 0; i < count; i++) {
-        bellTone(now + i * 0.42, 0.65, 1046.5, baseVolume);
-      }
+      for (let i = 0; i < count; i++) bellTone(now + i * 0.42, 0.65, 1046.5, baseVolume);
     }
-
     function notify(title, body) {
       if (!notificationsEnabledInput.checked) return;
-      if (!("Notification" in window)) return;
-      if (Notification.permission !== "granted") return;
+      if (!('Notification' in window)) return;
+      if (Notification.permission !== 'granted') return;
       new Notification(title, { body });
     }
-
     function isWithinSchedule(now) {
       if (!scheduleEnabledInput.checked) return true;
-
       const current = now.getHours() * 60 + now.getMinutes();
-
-      if (startMinutes === endMinutes) {
-        return true;
-      }
-
-      if (endMinutes > startMinutes) {
-        return current >= startMinutes && current <= endMinutes;
-      }
-
+      if (startMinutes === endMinutes) return true;
+      if (endMinutes > startMinutes) return current >= startMinutes && current <= endMinutes;
       return current >= startMinutes || current <= endMinutes;
     }
-
     function getScheduleText() {
-      if (!scheduleEnabledInput.checked) {
-        return "Schedule off, chimes allowed all day";
-      }
+      if (!scheduleEnabledInput.checked) return 'Schedule off, FlowBell allowed all day';
       return `Schedule on, active from ${minutesToAmPm(startMinutes)} to ${minutesToAmPm(endMinutes)}`;
     }
 
     function saveSettings() {
-      localStorage.setItem("kunalClock_startMinutes", String(startMinutes));
-      localStorage.setItem("kunalClock_endMinutes", String(endMinutes));
-      localStorage.setItem("kunalClock_scheduleEnabled", scheduleEnabledInput.checked);
-      localStorage.setItem("kunalClock_notificationsEnabled", notificationsEnabledInput.checked);
-      localStorage.setItem("kunalClock_volume", volumeSlider.value);
+      localStorage.setItem('flowBell_startMinutes', String(startMinutes));
+      localStorage.setItem('flowBell_endMinutes', String(endMinutes));
+      localStorage.setItem('flowBell_scheduleEnabled', scheduleEnabledInput.checked);
+      localStorage.setItem('flowBell_notificationsEnabled', notificationsEnabledInput.checked);
+      localStorage.setItem('flowBell_volume', volumeSlider.value);
+      localStorage.setItem('flowBell_panelCollapsed', String(panel.classList.contains('collapsed')));
     }
-
     function loadSettings() {
-      const savedStart = localStorage.getItem("kunalClock_startMinutes");
-      const savedEnd = localStorage.getItem("kunalClock_endMinutes");
-      const savedScheduleEnabled = localStorage.getItem("kunalClock_scheduleEnabled");
-      const savedNotificationsEnabled = localStorage.getItem("kunalClock_notificationsEnabled");
-      const savedVolume = localStorage.getItem("kunalClock_volume");
-
+      const savedStart = localStorage.getItem('flowBell_startMinutes');
+      const savedEnd = localStorage.getItem('flowBell_endMinutes');
+      const savedScheduleEnabled = localStorage.getItem('flowBell_scheduleEnabled');
+      const savedNotificationsEnabled = localStorage.getItem('flowBell_notificationsEnabled');
+      const savedVolume = localStorage.getItem('flowBell_volume');
+      const savedPanelCollapsed = localStorage.getItem('flowBell_panelCollapsed');
       if (savedStart !== null) startMinutes = Number(savedStart);
       if (savedEnd !== null) endMinutes = Number(savedEnd);
-      if (savedScheduleEnabled !== null) scheduleEnabledInput.checked = savedScheduleEnabled === "true";
-      if (savedNotificationsEnabled !== null) notificationsEnabledInput.checked = savedNotificationsEnabled === "true";
+      if (savedScheduleEnabled !== null) scheduleEnabledInput.checked = savedScheduleEnabled === 'true';
+      if (savedNotificationsEnabled !== null) notificationsEnabledInput.checked = savedNotificationsEnabled === 'true';
       if (savedVolume !== null) volumeSlider.value = savedVolume;
-
+      if (savedPanelCollapsed === 'false') {
+        panel.classList.remove('collapsed');
+        panelToggle.textContent = 'Hide';
+        panelToggle.setAttribute('aria-expanded', 'true');
+      }
       updateRangeVisual();
       updateNotificationsHint();
     }
@@ -803,32 +714,27 @@
         setStatus(started ? `Running • Notifications off • ${getScheduleText()}` : `Notifications off • ${getScheduleText()}`);
         return;
       }
-
-      if (!("Notification" in window)) {
+      if (!('Notification' in window)) {
         notificationsEnabledInput.checked = false;
         saveSettings();
         updateNotificationsHint();
-        setStatus("Notifications not supported in this browser");
+        setStatus('Notifications not supported in this browser');
         return;
       }
-
-      if (Notification.permission === "granted") {
+      if (Notification.permission === 'granted') {
         saveSettings();
         updateNotificationsHint();
         setStatus(started ? `Running • Notifications on • ${getScheduleText()}` : `Notifications on • ${getScheduleText()}`);
         return;
       }
-
       const permission = await Notification.requestPermission();
-
-      if (permission !== "granted") {
+      if (permission !== 'granted') {
         notificationsEnabledInput.checked = false;
         saveSettings();
         updateNotificationsHint();
-        setStatus("Notification permission not granted");
+        setStatus('Notification permission not granted');
         return;
       }
-
       saveSettings();
       updateNotificationsHint();
       setStatus(started ? `Running • Notifications on • ${getScheduleText()}` : `Notifications on • ${getScheduleText()}`);
@@ -836,119 +742,89 @@
 
     function maybeTriggerChime() {
       if (!started) return;
-
       const now = new Date();
       const h = now.getHours();
       const m = now.getMinutes();
       const s = now.getSeconds();
-
       if (s !== 0) return;
-
       const key = `${h}-${m}`;
       if (lastTriggeredKey === key) return;
-
       if (!isWithinSchedule(now)) {
         lastTriggeredKey = key;
         return;
       }
-
       const formatted = format12Hour(h);
       const formattedHour = pad(formatted.hour);
-
       if (m === 0) {
         chime(2);
-        notify("Top of the hour", `${formattedHour}:00 ${formatted.ampm}`);
-        setStatus(`Chimed twice at ${formattedHour}:00 ${formatted.ampm} • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
+        notify('Top of the hour', `${formattedHour}:00 ${formatted.ampm}`);
+        setStatus(`Rang twice at ${formattedHour}:00 ${formatted.ampm} • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
         lastTriggeredKey = key;
       } else if (m === 30) {
         chime(1);
-        notify("Half hour", `${formattedHour}:30 ${formatted.ampm}`);
-        setStatus(`Chimed once at ${formattedHour}:30 ${formatted.ampm} • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
+        notify('Half hour', `${formattedHour}:30 ${formatted.ampm}`);
+        setStatus(`Rang once at ${formattedHour}:30 ${formatted.ampm} • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
         lastTriggeredKey = key;
       }
     }
 
-    async function toggleStartStop() {
-      await ensureAudio();
-      started = !started;
-      updateStartButtonUI();
-
-      if (started) {
-        setStatus(`Running • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
-      } else {
-        setStatus("Stopped");
-      }
-    }
 
     function pointerXToMinutes(clientX) {
       const rect = rangeWrap.getBoundingClientRect();
       const raw = Math.min(Math.max(clientX - rect.left, 0), rect.width);
       const ratio = rect.width === 0 ? 0 : raw / rect.width;
-      const minutes = Math.round(ratio * 1439);
-      return snapMinutes(minutes);
+      return snapMinutes(Math.round(ratio * 1439));
     }
-
     function applyDrag(clientX) {
       const newMinutes = pointerXToMinutes(clientX);
-
-      if (activeDrag === "start") {
-        startMinutes = newMinutes;
-      } else if (activeDrag === "end") {
-        endMinutes = newMinutes;
-      }
-
+      if (activeDrag === 'start') startMinutes = newMinutes;
+      if (activeDrag === 'end') endMinutes = newMinutes;
       updateRangeVisual();
       saveSettings();
       setStatus(started ? `Running • ${getScheduleText()} • Volume ${volumeSlider.value}%` : `Updated • ${getScheduleText()}`);
     }
-
     function startDrag(which, event) {
       activeDrag = which;
       applyDrag(event.clientX);
-      window.addEventListener("pointermove", onPointerMove);
-      window.addEventListener("pointerup", stopDrag);
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', stopDrag);
     }
-
     function onPointerMove(event) {
       if (!activeDrag) return;
       applyDrag(event.clientX);
     }
-
     function stopDrag() {
       activeDrag = null;
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", stopDrag);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', stopDrag);
     }
 
-    startKnob.addEventListener("pointerdown", (event) => startDrag("start", event));
-    endKnob.addEventListener("pointerdown", (event) => startDrag("end", event));
-
-    startBtn.addEventListener("click", toggleStartStop);
-
-    testHourBtn.addEventListener("click", async () => {
+    startKnob.addEventListener('pointerdown', (event) => startDrag('start', event));
+    endKnob.addEventListener('pointerdown', (event) => startDrag('end', event));
+    playBtn.addEventListener('click', async () => {
+      if (started) return;
       await ensureAudio();
-      chime(2);
-      setStatus(`Tested :00 pattern • Volume ${volumeSlider.value}%`);
+      started = true;
+      updateStartButtonUI();
+      setStatus(`Running • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
     });
-
-    testHalfBtn.addEventListener("click", async () => {
+    stopBtn.addEventListener('click', async () => {
+      if (!started) return;
       await ensureAudio();
-      chime(1);
-      setStatus(`Tested :30 pattern • Volume ${volumeSlider.value}%`);
+      started = false;
+      updateStartButtonUI();
+      setStatus('Stopped');
     });
-
-    scheduleEnabledInput.addEventListener("change", () => {
-      updateScheduleVisibility();
+    testHourBtn.addEventListener('click', async () => { await ensureAudio(); chime(2); setStatus(`Tested :00 pattern • Volume ${volumeSlider.value}%`); });
+    testHalfBtn.addEventListener('click', async () => { await ensureAudio(); chime(1); setStatus(`Tested :30 pattern • Volume ${volumeSlider.value}%`); });
+    scheduleEnabledInput.addEventListener('change', () => { updateScheduleVisibility(); saveSettings(); setStatus(started ? `Running • ${getScheduleText()} • Volume ${volumeSlider.value}%` : `Updated • ${getScheduleText()}`); });
+    notificationsEnabledInput.addEventListener('change', syncNotificationToggle);
+    volumeSlider.addEventListener('input', () => { updateVolumeLabel(); saveSettings(); setStatus(started ? `Running • ${getScheduleText()} • Volume ${volumeSlider.value}%` : `Volume set to ${volumeSlider.value}%`); });
+    panelToggle.addEventListener('click', () => {
+      const collapsed = panel.classList.toggle('collapsed');
+      panelToggle.textContent = collapsed ? 'Show' : 'Hide';
+      panelToggle.setAttribute('aria-expanded', String(!collapsed));
       saveSettings();
-      setStatus(started ? `Running • ${getScheduleText()} • Volume ${volumeSlider.value}%` : `Updated • ${getScheduleText()}`);
-    });
-
-    notificationsEnabledInput.addEventListener("change", syncNotificationToggle);
-
-    volumeSlider.addEventListener("input", () => {
-      updateVolumeLabel();
-      saveSettings();
-      setStatus(started ? `Running • ${getScheduleText()} • Volume ${volumeSlider.value}%` : `Volume set to ${volumeSlider.value}%`);
     });
 
     loadSettings();
@@ -957,9 +833,8 @@
     updateStartButtonUI();
     updateScheduleVisibility();
     updateRangeVisual();
-
     setInterval(updateClock, 1000);
-    setInterval(maybeTriggerChime, 250);
+    setInterval(maybeTriggerChime, 500);
     setStatus(`Waiting to start • ${getScheduleText()} • Volume ${volumeSlider.value}%`);
   </script>
 </body>
