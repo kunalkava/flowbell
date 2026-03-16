@@ -52,11 +52,11 @@
         linear-gradient(160deg, var(--bg1), var(--bg2) 50%, var(--bg3));
       display: grid;
       place-items: center;
-      padding: 28px;
+      padding: 28px 24px;
       overflow-x: hidden;
     }
 
-    .wrap { width: min(1040px, 95vw); text-align: center; }
+    .wrap { width: 100%; max-width: 1040px; text-align: center; }
 
     .hero-meta {
       display: inline-flex;
@@ -224,6 +224,10 @@
     .panel-header {
       display: flex; align-items: center; justify-content: space-between; gap: 16px;
       margin-bottom: 10px; padding: 2px 4px 10px;
+      cursor: pointer;
+    }
+    .panel-header:hover .panel-toggle {
+      background: rgba(255,255,255,0.10);
     }
     .panel.collapsed .panel-header { margin-bottom: 0; padding-bottom: 0; }
     .panel-title-wrap { display: flex; flex-direction: column; gap: 2px; }
@@ -369,7 +373,7 @@
       border: none; border-top: 1px solid rgba(255,255,255,0.07);
       margin: 24px auto; width: min(860px, 100%);
     }
-    .footer { margin-top: 40px; padding-top: 0;
+    .footer { margin-top: 40px; padding-top: 0; padding-bottom: 40px;
       border-top: none;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
     }
@@ -455,7 +459,7 @@
     <div class="status" id="status">Waiting to start</div>
 
     <div class="panel collapsed" id="controlsPanel">
-      <div class="panel-header">
+      <div class="panel-header" id="panelHeader">
         <div class="panel-title-wrap">
           <div class="panel-title">FlowBell Controls</div>
           <div class="panel-subtitle">Volume, notifications &amp; schedule</div>
@@ -850,12 +854,14 @@
     scheduleEnabledInput.addEventListener('change', () => { updateScheduleVisibility(); saveSettings(); setStatus(started ? `Running • ${getScheduleText()} • Volume ${volumeSlider.value}%` : `Updated • ${getScheduleText()}`); });
     notificationsEnabledInput.addEventListener('change', syncNotificationToggle);
     volumeSlider.addEventListener('input', () => { updateVolumeLabel(); saveSettings(); setStatus(started ? `Running • ${getScheduleText()} • Volume ${volumeSlider.value}%` : `Volume set to ${volumeSlider.value}%`); });
-    panelToggle.addEventListener('click', () => {
+    function togglePanel() {
       const collapsed = panel.classList.toggle('collapsed');
       panelToggle.textContent = collapsed ? 'Show' : 'Hide';
       panelToggle.setAttribute('aria-expanded', String(!collapsed));
       saveSettings();
-    });
+    }
+    panelToggle.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
+    document.getElementById('panelHeader').addEventListener('click', togglePanel);
 
     loadSettings();
     updateVolumeLabel();
